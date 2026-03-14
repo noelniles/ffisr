@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FFISR</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+
+      <!-- ── Sidebar ───────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="sidebar-brand">FFISR</div>
+
+        <!-- Link -->
+        <details class="ctrl-group" open>
+          <summary class="ctrl-group-title">Link</summary>
+          <div class="ctrl-body">
+            <div class="ctrl-row">
+              <label>kbps</label>
+              <input id="linkKbps" type="number" min="50" max="20000" value="5000" />
+            </div>
+            <div class="ctrl-row">
+              <label>Loss</label>
+              <input id="packetLoss" type="number" min="0" max="0.8" step="0.01" value="0.02" />
+            </div>
+            <div class="ctrl-row">
+              <label>Sem. share</label>
+              <input id="semanticRatio" type="number" min="0.05" max="0.9" step="0.05" value="0.55" />
+            </div>
+            <div class="preset-row">
+              <button data-preset="5000">5M</button>
+              <button data-preset="1000">1M</button>
+              <button data-preset="200">200k</button>
+              <button id="applyLink">Apply</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- RF -->
+        <details class="ctrl-group">
+          <summary class="ctrl-group-title">RF Control</summary>
+          <div class="ctrl-body">
+            <div class="ctrl-row">
+              <label>Silence (s)</label>
+              <input id="rfSilenceSeconds" type="number" min="1" max="600" step="1" value="20" />
+            </div>
+            <button id="triggerRFSilence" class="warning-btn full-btn">Trigger RF Silence</button>
+          </div>
+        </details>
+
+        <!-- Video Source -->
+        <details class="ctrl-group">
+          <summary class="ctrl-group-title">Video Source</summary>
+          <div class="ctrl-body">
+            <input id="videoSourcePath" type="text" placeholder="/path/to/sequence/" class="full-input" />
+            <div class="ctrl-row checkbox-row">
+              <label>Loop</label>
+              <input id="videoLoop" type="checkbox" checked />
+            </div>
+            <div class="preset-row">
+              <button id="applyVideoSource">Use Video</button>
+              <button id="useSyntheticSource">Synthetic</button>
+            </div>
+          </div>
+        </details>
+
+        <!-- Tracking -->
+        <details class="ctrl-group" open>
+          <summary class="ctrl-group-title">Tracking</summary>
+          <div class="ctrl-body">
+            <div class="ctrl-row checkbox-row">
+              <label>Enabled</label>
+              <input id="trackingEnabled" type="checkbox" checked />
+            </div>
+            <div class="ctrl-row">
+              <label>Model</label>
+              <select id="trackingModelSelect">
+                <option value="yolov8s-visdrone.pt" selected>YOLOv8s VisDrone ✈</option>
+                <option value="yolo11n.pt">YOLO11n (COCO)</option>
+                <option value="yolo11s.pt">YOLO11s (COCO)</option>
+                <option value="yolo11m.pt">YOLO11m (COCO)</option>
+                <option value="yolo11l.pt">YOLO11l (COCO)</option>
+                <option value="yolo11x.pt">YOLO11x (COCO)</option>
+                <option value="yolov8n.pt">YOLOv8n (COCO)</option>
+                <option value="yolov8s.pt">YOLOv8s (COCO)</option>
+                <option value="yolov8m.pt">YOLOv8m (COCO)</option>
+                <option value="rtdetr-l.pt">RT-DETR-L (COCO)</option>
+                <option value="rtdetr-x.pt">RT-DETR-X (COCO)</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </div>
+            <div id="trackingModelCustomRow" style="display:none" class="ctrl-row">
+              <label>Path</label>
+              <input id="trackingModelPath" type="text" placeholder="/path/to/model.pt" />
+            </div>
+            <div class="ctrl-row">
+              <label>Tracker</label>
+              <select id="trackingTracker">
+                <option value="app/bytetrack_aerial.yaml" selected>ByteTrack Aerial</option>
+                <option value="bytetrack.yaml">ByteTrack (default)</option>
+                <option value="botsort.yaml">BoT-SORT</option>
+              </select>
+            </div>
+            <div class="ctrl-row">
+              <label>Conf</label>
+              <input id="trackingConf" type="number" min="0.05" max="0.95" step="0.05" value="0.25" />
+            </div>
+            <div class="ctrl-row">
+              <label>Preprocess</label>
+              <select id="preprocessMode">
+                <option value="none" selected>None</option>
+                <option value="visible">Visible</option>
+                <option value="swir">SWIR</option>
+              </select>
+            </div>
+            <button id="applyTrackingConfig" class="full-btn">Apply</button>
+          </div>
+        </details>
+
+        <!-- Batch -->
+        <details class="ctrl-group">
+          <summary class="ctrl-group-title">Batch Eval</summary>
+          <div class="ctrl-body">
+            <input id="batchDatasetDir" type="text" placeholder="/path/to/sequences/" class="full-input" />
+            <div class="ctrl-row">
+              <label>Max seqs</label>
+              <input id="batchMaxSeqs" type="number" min="1" max="100" value="5" />
+            </div>
+            <div class="ctrl-row">
+              <label>Link kbps</label>
+              <input id="batchLinkKbps" type="number" min="50" max="20000" value="1000" />
+            </div>
+            <div class="ctrl-row">
+              <label>Loss</label>
+              <input id="batchPacketLoss" type="number" min="0" max="0.8" step="0.01" value="0.02" />
+            </div>
+            <button id="runBatch" class="full-btn">Run Batch</button>
+            <div id="batchStatus" class="batch-status"></div>
+          </div>
+        </details>
+
+      </aside>
+
+      <!-- ── Main content ──────────────────────────────────────── -->
+      <div class="content">
+
+        <!-- Displays -->
+        <div class="displays-grid">
+          <div class="display-pane card">
+            <div class="pane-head">
+              <span class="pane-label">BASELINE</span>
+              <span id="baselineStatus" class="pill">waiting…</span>
+            </div>
+            <canvas id="baselineCanvas" width="960" height="540"></canvas>
+          </div>
+
+          <div class="display-pane card">
+            <div class="pane-head">
+              <span class="pane-label">FEATURE-FIRST</span>
+              <span id="semanticStatus" class="pill">waiting…</span>
+              <div class="kf-inline">
+                <input id="trackSelect" type="number" placeholder="track ID" />
+                <button id="requestKeyframe">Keyframe</button>
+              </div>
+            </div>
+            <canvas id="semanticCanvas" width="960" height="540"></canvas>
+          </div>
+        </div>
+
+        <!-- Data row -->
+        <div class="data-grid">
+          <div class="card data-card">
+            <div class="pane-head"><span class="pane-label">TRACKS</span></div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>ID</th><th>Class</th><th>Conf</th><th>Vel</th><th>t (s)</th></tr>
+                </thead>
+                <tbody id="trackBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card data-card">
+            <div class="pane-head"><span class="pane-label">EVENTS</span></div>
+            <ul id="eventList" class="event-list"></ul>
+          </div>
+
+          <div class="card data-card metrics-card">
+            <div class="pane-head">
+              <span class="pane-label">METRICS</span>
+              <button id="refreshSummary" class="summary-btn">Export summary</button>
+            </div>
+            <div id="metricsPanel" class="metrics"></div>
+            <pre id="summaryOutput"></pre>
+          </div>
+        </div>
+
+        <!-- Batch results (shown after run) -->
+        <div id="batchResults" class="card batch-results-card" style="display:none">
+          <div class="pane-head"><span class="pane-label">BATCH RESULTS</span></div>
+          <div class="batch-results">
+            <table id="batchTable">
+              <thead>
+                <tr>
+                  <th>Sequence</th><th>Frames</th><th>Tracks</th>
+                  <th>Sem. kbps</th><th>Base. kbps</th><th>BW Savings</th>
+                  <th>Sem. Drop%</th><th>Base. Drop%</th>
+                  <th>Pwr Sem.</th><th>Pwr Base.</th>
+                </tr>
+              </thead>
+              <tbody id="batchBody"></tbody>
+              <tfoot id="batchFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
