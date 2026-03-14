@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ffisr-demo"
+version = "0.1.0"
+description = "Feature-First ISR demo: semantic stream vs baseline video under constrained links"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.30.0",
+  "jinja2>=3.1.4",
+  "numpy>=1.26.0",
+  "opencv-python>=4.9.0",
+  "pydantic>=2.7.0",
+  "ultralytics>=8.3.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
