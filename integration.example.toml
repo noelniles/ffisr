@@ -1,0 +1,24 @@
+[integration]
+schema_version = "1.0"
+
+[integration.vehicle]
+kind = "vehicle"
+driver = "px4"
+[integration.vehicle.params]
+source = "pixhawk-px4"
+frame_id = "NED"
+
+[integration.perception]
+kind = "perception"
+driver = "sightline"
+[integration.perception.params]
+source = "oem-4100"
+max_queue = 32
+
+[integration.transport]
+kind = "transport"
+driver = "link_emulator"
+[integration.transport.params]
+link_kbps = 5000
+packet_loss = 0.02
+semantic_ratio = 0.55

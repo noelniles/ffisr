@@ -1,0 +1,10 @@
+# ByteTrack config tuned for low-fps aerial inference (8-15 fps effective rate).
+# At 8fps a moving car travels ~4x further between frames than at 30fps,
+# so match_thresh must be more permissive and track_buffer longer.
+tracker_type: bytetrack
+track_high_thresh: 0.25   # same as default — VisDrone model scores are calibrated
+track_low_thresh: 0.10    # keep low-score detections in play for partial occlusion
+new_track_thresh: 0.20    # lower than default to start tracks on weaker detections
+track_buffer: 90          # keep lost tracks alive for 90 ticks (~11s at 8fps)
+match_thresh: 0.95        # more permissive IoU cost — large displacement between frames
+fuse_score: True
