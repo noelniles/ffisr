@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Model weights (large binary files - download separately)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.weights
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+*.lot
+*.lof
+*.nav
+*.snm
+*.vrb
+main.pdf
+
+# Data (large datasets - not tracked in git)
+data/
+
+# Manim rendered videos
+media/
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Eval results (generated outputs)
+eval/results/
+
+# Misc
+*.pyc
+.pytest_cache/
