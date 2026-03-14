@@ -1,0 +1,215 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{siunitx}
+\usepackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\title{Feature-First ISR: Semantic Transport for\\
+Tactical UAS over Constrained and Contested Links}
+\author{FFISR Project Team}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Small UAS operating in contested environments routinely lose actionable
+imagery at exactly the wrong moment: degraded links, RF blackouts, and
+narrow spectrum windows compress or eliminate the video feed before it
+reaches the operator. Feature-First ISR (FFISR) attacks this problem at
+the transport layer. Rather than streaming continuous video, FFISR runs
+object detection and multi-object tracking at the edge, transmits
+compact semantic state at high cadence, and delivers annotated keyframe
+imagery adaptively. Evaluated across 10 VisDrone sequences under three
+link regimes, FFISR achieves \textbf{96\% bandwidth reduction} relative
+to continuous video while maintaining semantic delivery under conditions
+that produce 100\% baseline packet loss. The detector and tracker stack
+is built on RT-DETR \cite{rtdetr2023} and ByteTrack or BoT-SORT
+\cite{bytetrack2022,botsort2022}.
+\end{abstract}
+
+\section{Problem}
+The ISR data chain for small UAS has a well-known weak point: the RF
+link. Sensors have improved dramatically in resolution and frame rate,
+edge compute is now powerful enough to run real-time neural detectors,
+and ground stations can absorb high-rate data when conditions permit.
+But the link itself is narrow, contested, and intermittent. When
+throughput drops or signal is lost, a video-first pipeline delivers
+nothing---the operator loses situational picture at the moment it
+matters most.
+
+Standard responses---compress harder, increase transmit power, add
+spectrum---have real limits in tactical and regulatory contexts. A
+different framing is: instead of fighting to keep the video moving,
+prioritize the information the operator actually needs.
+
+\section{Approach}
+
+FFISR reorders the transport priority. Object-level state---track
+identities, classes, positions, velocities, and confidence---is small,
+structured, and high-value. A complete track update for a ten-object
+scene fits in a few hundred bytes, surviving link conditions that would
+corrupt or drop even a single compressed video frame. Full imagery is
+transmitted only when it adds value: on operator request, on anomaly
+detection, and on a link-adaptive periodic schedule.
+
+Within the evaluation framework, a simulated baseline video channel
+runs on the same emulated link under identical budget constraints.
+This channel does not exist in the live deployment path; it is present
+solely to give evaluators a direct comparison between traditional
+streaming and the feature-first approach. The approach is consistent
+with task-oriented communication research, which argues that
+source-complete transmission is the wrong optimization target when the
+receiver has a specific task \cite{semantic_survey_2021}.
+
+\section{System Architecture}
+
+\subsection{Edge Perception}
+
+The perception layer runs on the same platform that carries the sensor.
+A configurable detector---YOLO-family checkpoints or RT-DETR
+\cite{rtdetr2023}---processes each frame and passes detections to a
+tracker. ByteTrack \cite{bytetrack2022} and BoT-SORT
+\cite{botsort2022} are both supported. The tracker maintains
+persistent track identities across frames, producing per-update records
+of track ID, class, confidence, bounding box, and estimated velocity.
+
+RT-DETR is particularly well-suited here: unlike earlier
+transformer-based detectors \cite{detr2020}, it achieves competitive
+accuracy at real-time rates, viable on embedded UAS payloads.
+ByteTrack's association strategy---keeping low-confidence detections in
+play---improves continuity in cluttered, multi-scale aerial scenes
+\cite{bytetrack2022}.
+
+\subsection{Semantic Transport and Blackout Handling}
+
+Each track update is serialized as compact JSON with delta-encoded
+bounding boxes, keeping per-message size small for stable tracks and
+allowing the channel to sustain high update cadence even under tight
+bandwidth. The transport layer is link-agnostic: messages are written
+to a configurable outbound queue and dispatched over whatever radio
+interface the platform exposes, with no assumptions about underlying
+protocol.
+
+When tracker confidence drops below a threshold, the system emits an
+anomaly event and optionally schedules a keyframe---giving the operator
+an explicit signal when the perception layer is uncertain rather than
+silently degrading.
+
+RF blackouts are handled gracefully: outbound messages are buffered
+locally and replayed on reconnect before resuming live updates. The
+receiver reconstructs the current scene without restarting from zero,
+and track IDs are preserved across the gap so objects reappear under
+the same identities when link is restored.
+
+\subsection{Adaptive Keyframe Policy}
+
+Keyframes are full annotated frames transmitted over the semantic
+channel on three triggers: explicit operator request, anomaly event,
+and a periodic timer whose interval contracts under tighter link
+budgets. Under 200~kbps the interval shortens to keep visual context
+current. Keyframes are annotated with current track overlays so the
+operator always receives context-aligned imagery.
+
+\section{Metrics}
+
+Throughput and savings figures are derived from delivery counters in
+the transport layer. Let $B_s^{\text{att}}$ and $B_b^{\text{att}}$
+denote bytes \emph{attempted} by the semantic and baseline channels
+respectively, and $B_s$, $B_b$ the corresponding delivered bytes over
+window $T$:
+
+\begin{align}
+\text{Sem.\ Throughput} &= \frac{8 B_s}{1000\,T} \quad (\text{kbps}) \\
+\text{Base.\ Throughput} &= \frac{8 B_b}{1000\,T} \quad (\text{kbps}) \\
+\text{BW Savings} &= 100\!\left(1 - \frac{B_s^{\text{att}}}{B_b^{\text{att}}}\right) \quad (\%)
+\end{align}
+
+Bandwidth savings are computed against attempted traffic to remain
+valid even when the baseline channel is fully congested. A
+transmission-volume proxy (total attempted megabits) captures the
+relative data burden of each approach independent of link headroom.
+
+\section{Evaluation}
+
+Evaluation uses 10 sequences from the VisDrone benchmark
+\cite{visdrone2019} with a fixed YOLOv8s detector and ByteTrack
+tracker. Three link regimes cover the operational range from
+permissive to severely constrained: Setting~A at 5000~kbps (no
+blackout), Setting~B at 1000~kbps (5~s blackout window), and
+Setting~C at 200~kbps (10~s blackout window). Packet loss is fixed
+at 2\% across all settings. The detector and tracker configuration
+is held constant---no per-sequence or per-regime tuning.
+
+\subsection{Results}
+
+\input{../../eval/results/summary_table.tex}
+
+Table~\ref{tab:results} summarises the averaged results. Bandwidth
+savings are consistent at $\sim$96\% across all regimes because the
+semantic representation is compact regardless of link budget.
+The resilience advantage is shown in Figure~\ref{fig:drops}: as the
+link degrades from Setting A to C, baseline packet drop rises from
+10\% to 100\%, while semantic drop remains below 4\%. At 200~kbps the
+baseline channel delivers zero bytes; the semantic channel continues
+operating normally.
+
+Figure~\ref{fig:throughput} shows delivered versus required throughput
+per regime. The semantic channel fits comfortably within the 200~kbps
+budget ($\sim$100~kbps delivered); full-video streaming requires
+2000--4600~kbps---an order of magnitude more.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\columnwidth]{../../eval/results/fig_drops.pdf}
+\caption{Packet drop rate as the link degrades. Baseline (grey) reaches
+100\% at 200~kbps; semantic (blue) stays below 4\% across all
+regimes. X-axis is inverted to show degrading conditions left-to-right.}
+\label{fig:drops}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=\columnwidth]{../../eval/results/fig_throughput.pdf}
+\caption{Needed vs.\ delivered throughput per link regime. Hatched bars
+show required bandwidth; solid bars show what was actually delivered.
+Semantic messages fit within every regime; baseline video is shed
+progressively as the budget tightens.}
+\label{fig:throughput}
+\end{figure}
+
+\section{Conclusion}
+
+FFISR demonstrates that a semantic-first transport policy maintains
+tactical situational awareness under link conditions where continuous
+video delivery fails completely. The software stack inserts at the
+transport layer with no changes to sensor, radio, or ground station
+hardware. The detector and tracker are configurable, so a program can
+bring its own domain-trained model checkpoint. Acquisition stakeholders
+retain a direct comparison channel throughout, which is a prerequisite
+for building confidence in any AI-augmented system.
+
+As spectrum competition increases and EW threats mature, the ability
+to maintain tactical awareness on a degraded link becomes a force
+multiplier. With $\sim$96\% bandwidth reduction and near-zero semantic
+drop even at 200~kbps, FFISR represents a near-term, low-integration-risk
+path to more resilient ISR on constrained tactical links. Detection
+accuracy depends on training-domain match and may need adaptation for
+IR or low-light operation; these are planned near-term extensions
+alongside age-of-information metrics and expanded adverse-condition
+trials.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
