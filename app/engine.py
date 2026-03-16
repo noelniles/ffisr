@@ -289,6 +289,44 @@ class FeatureFirstEngine:
     def _tracking_active(self) -> bool:
         return self.tracking_enabled and self.video_source_mode == "video"
 
+    # Map of known model stems → HuggingFace (repo_id, remote_filename)
+    _HF_MODEL_REGISTRY: dict[str, tuple[str, str]] = {
+        "yolov8s-visdrone": ("mshamrai/yolov8s-visdrone", "best.pt"),
+        "yolov8l-visdrone": ("mshamrai/yolov8l-visdrone", "best.pt"),
+    }
+
+    @staticmethod
+    def _try_download_model(path: Path) -> Path | None:
+        """Try to download a missing model file from HuggingFace.
+
+        Returns the local Path if download succeeds, None otherwise.
+        The file is saved next to where it was requested (usually the cwd).
+        """
+        stem = path.stem.lower()
+        entry = FeatureFirstEngine._HF_MODEL_REGISTRY.get(stem)
+        if entry is None:
+            return None  # not a known HuggingFace model — let ultralytics handle it
+
+        repo_id, remote_name = entry
+        url = f"https://huggingface.co/{repo_id}/resolve/main/{remote_name}"
+        dest = path if path.parent != Path(".") else Path(path.name)
+
+        import urllib.request
+        try:
+            tmp = dest.with_suffix(".tmp")
+            print(f"[ffisr] Downloading {stem}.pt from {url} …", flush=True)
+            urllib.request.urlretrieve(url, tmp)
+            tmp.rename(dest)
+            print(f"[ffisr] Saved to {dest}", flush=True)
+            return dest
+        except Exception as exc:
+            print(f"[ffisr] Auto-download failed for {stem}: {exc}", flush=True)
+            try:
+                tmp.unlink(missing_ok=True)
+            except Exception:
+                pass
+            return None
+
     @staticmethod
     def _is_coco_model(model_path: str) -> bool:
         """Return True if model_path looks like a stock COCO-pretrained checkpoint.
@@ -328,11 +366,14 @@ class FeatureFirstEngine:
                     resolved = Path(target_path)
                 else:
                     resolved = Path(target_path)
-                if not resolved.exists() and not resolved.suffix == "":
-                    raise FileNotFoundError(
-                        f"Model file not found: '{target_path}'. "
-                        f"Copy the .pt file to the working directory or provide an absolute path."
-                    )
+                if not resolved.exists() and resolved.suffix != "":
+                    resolved = FeatureFirstEngine._try_download_model(resolved)
+                    if resolved is None:
+                        raise FileNotFoundError(
+                            f"Model file not found: '{target_path}'. "
+                            f"Copy the .pt file to the working directory or provide an absolute path."
+                        )
+                    target_path = str(resolved)
                 _name = resolved.stem.lower()
                 if "rtdetr" in _name or "rt-detr" in _name:
                     model = ultralytics.RTDETR(target_path)
