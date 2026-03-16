@@ -62,7 +62,6 @@ let lastBaselineId = -1;
 let lastKeyframeId = -1;
 let lastSemanticTrackTs = -1;
 let lastSemanticWallClockMs = Date.now();
-const trackLastSeenMs = new Map();
 
 let displayedKeyframe = new Image();
 let pendingKeyframe = null;
@@ -195,14 +194,6 @@ async function triggerRFSilenceWindow() {
   }
 }
 
-// Only show tracks seen within the last 2 poll cycles (~1s).
-const STALE_MS = 1000;
-function trackIsActive(trackId) {
-  const seenMs = trackLastSeenMs.get(trackId);
-  if (seenMs == null) return false;
-  return (Date.now() - seenMs) < STALE_MS;
-}
-
 function renderSemanticFrame() {
   if (displayedKeyframe.complete && displayedKeyframe.naturalWidth > 0) {
     ctx.drawImage(displayedKeyframe, 0, 0, canvas.width, canvas.height);
@@ -213,8 +204,6 @@ function renderSemanticFrame() {
   for (const track of tracks) {
     if (!track.bbox || track.bbox.length !== 4) continue;
     const isSelected = selectedTrackId === track.track_id;
-    if (!isSelected && !trackIsActive(track.track_id)) continue;
-
     const [x, y, w, h] = track.bbox;
     const [r, g, b] = isSelected ? [57, 229, 128] : [255, 180, 104];
     ctx.strokeStyle = `rgb(${r},${g},${b})`;
@@ -381,10 +370,6 @@ async function pollState() {
     if (newestTrackTs > lastSemanticTrackTs) {
       lastSemanticTrackTs = newestTrackTs;
       lastSemanticWallClockMs = Date.now();
-    }
-    const nowMs = Date.now();
-    for (const track of tracks) {
-      if (track.bbox) trackLastSeenMs.set(track.track_id, nowMs);
     }
 
     if (state.keyframe_frame_id !== lastKeyframeId) {
