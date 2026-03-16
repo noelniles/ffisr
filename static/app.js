@@ -195,8 +195,10 @@ async function triggerRFSilenceWindow() {
   }
 }
 
-// freshness: 1.0 = just seen, 0.0 = stale_ms old, smooth cubic ease-out
-const STALE_MS = 4000;
+// freshness: 1.0 = seen within the last poll interval, 0.0 = not seen recently.
+// STALE_MS is just over 2 poll cycles (polls run at ~500ms) so a track stays
+// visible while detections are continuous but disappears immediately when lost.
+const STALE_MS = 1200;
 function trackFreshness(trackId) {
   const seenMs = trackLastSeenMs.get(trackId);
   if (seenMs == null) return 0;
