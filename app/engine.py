@@ -362,23 +362,21 @@ class FeatureFirstEngine:
                     })
                 except Exception:
                     pass
-                if not Path(target_path).is_absolute():
-                    resolved = Path(target_path)
-                else:
-                    resolved = Path(target_path)
+                resolved = Path(target_path)
                 if not resolved.exists() and resolved.suffix != "":
-                    resolved = FeatureFirstEngine._try_download_model(resolved)
-                    if resolved is None:
+                    downloaded = FeatureFirstEngine._try_download_model(resolved)
+                    if downloaded is None:
                         raise FileNotFoundError(
                             f"Model file not found: '{target_path}'. "
                             f"Copy the .pt file to the working directory or provide an absolute path."
                         )
-                    target_path = str(resolved)
+                    resolved = downloaded
                 _name = resolved.stem.lower()
+                model_path_final = str(resolved)
                 if "rtdetr" in _name or "rt-detr" in _name:
-                    model = ultralytics.RTDETR(target_path)
+                    model = ultralytics.RTDETR(model_path_final)
                 else:
-                    model = ultralytics.YOLO(target_path)
+                    model = ultralytics.YOLO(model_path_final)
             except ImportError:
                 with self.lock:
                     self._model_loading = False
