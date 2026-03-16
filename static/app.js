@@ -195,16 +195,12 @@ async function triggerRFSilenceWindow() {
   }
 }
 
-// freshness: 1.0 = seen within the last poll interval, 0.0 = not seen recently.
-// STALE_MS is just over 2 poll cycles (polls run at ~500ms) so a track stays
-// visible while detections are continuous but disappears immediately when lost.
-const STALE_MS = 1200;
-function trackFreshness(trackId) {
+// Only show tracks seen within the last 2 poll cycles (~1s).
+const STALE_MS = 1000;
+function trackIsActive(trackId) {
   const seenMs = trackLastSeenMs.get(trackId);
-  if (seenMs == null) return 0;
-  const age = Math.max(0, Date.now() - seenMs);
-  const t = Math.min(1, age / STALE_MS);
-  return 1 - t * t * (3 - 2 * t);  // smoothstep: fast fade at end, slow at start
+  if (seenMs == null) return false;
+  return (Date.now() - seenMs) < STALE_MS;
 }
 
 function renderSemanticFrame() {
@@ -216,28 +212,21 @@ function renderSemanticFrame() {
 
   for (const track of tracks) {
     if (!track.bbox || track.bbox.length !== 4) continue;
-    const [x, y, w, h] = track.bbox;
     const isSelected = selectedTrackId === track.track_id;
-    const f = isSelected ? 1.0 : trackFreshness(track.track_id);
-    if (f <= 0) continue;
+    if (!isSelected && !trackIsActive(track.track_id)) continue;
 
-    // Box: full color at f=1, dims and thins toward f=0
-    const alpha = isSelected ? 1.0 : (0.25 + 0.75 * f);
-    const lw = isSelected ? 3 : (0.8 + 2.2 * f);
+    const [x, y, w, h] = track.bbox;
     const [r, g, b] = isSelected ? [57, 229, 128] : [255, 180, 104];
-    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
-    ctx.lineWidth = lw;
+    ctx.strokeStyle = `rgb(${r},${g},${b})`;
+    ctx.lineWidth = isSelected ? 3 : 2;
     ctx.strokeRect(x, y, w, h);
 
-    // Label: fade out faster than the box (square of freshness)
-    const labelAlpha = isSelected ? 1.0 : (f * f);
-    if (labelAlpha < 0.08) continue;
     const text = `ID ${track.track_id} ${track.class} ${(track.confidence * 100).toFixed(0)}%`;
-    ctx.font = `${Math.round(11 + 5 * f)}px IBM Plex Mono, Menlo, monospace`;
+    ctx.font = `13px IBM Plex Mono, Menlo, monospace`;
     const tw = ctx.measureText(text).width;
-    ctx.fillStyle = `rgba(10,17,24,${(0.74 * labelAlpha).toFixed(2)})`;
+    ctx.fillStyle = `rgba(10,17,24,0.74)`;
     ctx.fillRect(x, Math.max(0, y - 20), tw + 10, 20);
-    ctx.fillStyle = `rgba(219,237,248,${labelAlpha.toFixed(2)})`;
+    ctx.fillStyle = `rgb(219,237,248)`;
     ctx.fillText(text, x + 5, Math.max(14, y - 5));
   }
 }
