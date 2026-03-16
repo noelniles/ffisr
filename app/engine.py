@@ -999,7 +999,9 @@ class FeatureFirstEngine:
         stale_ttl = max(1.8, self._semantic_update_interval() * 10.0)
         for track_id, info in self.track_view.items():
             if track_id in visible_tracks:
+                info["visible"] = True
                 continue
+            info["visible"] = False
             if sim_ts - info["timestamp"] > stale_ttl:
                 to_remove.append(track_id)
 
@@ -1386,7 +1388,10 @@ class FeatureFirstEngine:
 
     def get_state(self) -> dict[str, Any]:
         with self.lock:
-            tracks = sorted(self.track_view.values(), key=lambda item: item["track_id"])
+            tracks = sorted(
+                (item for item in self.track_view.values() if item.get("visible", True)),
+                key=lambda item: item["track_id"],
+            )
             events = list(self.events)[:20]
             bandwidth = self._bandwidth_metrics()
             utility = self._utility_metrics()
