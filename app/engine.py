@@ -1037,22 +1037,6 @@ class FeatureFirstEngine:
 
     def _send_keyframe(self, frame: np.ndarray, sim_ts: float, now: float) -> bool:
         annotated = frame.copy()
-        if self._tracking_active():
-            self._draw_track_overlay(annotated, sim_ts)
-        if self.pending_keyframe_track is not None and self.pending_keyframe_track in self.track_view:
-            info = self.track_view[self.pending_keyframe_track]
-            x, y, w, h = info.get("bbox", [0, 0, 0, 0])
-            cv2.rectangle(annotated, (x, y), (x + w, y + h), (52, 208, 88), 3)
-            cv2.putText(
-                annotated,
-                f"Requested Track {self.pending_keyframe_track}",
-                (x, max(18, y - 8)),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.65,
-                (52, 208, 88),
-                2,
-                cv2.LINE_AA,
-            )
 
         if self.force_keyframe:
             target_size = (max(640, (self.width * 3) // 4), max(360, (self.height * 3) // 4))
