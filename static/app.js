@@ -264,6 +264,13 @@ function updateMetrics(state) {
   const semanticKbps = Number(b.semantic_kbps ?? 0).toFixed(2);
   const baselineKbps = Number(b.baseline_kbps ?? 0).toFixed(2);
   const savingsPct = Number(b.bandwidth_savings_pct ?? 0).toFixed(1);
+
+  const savingsPctEl = document.getElementById("savingsPct");
+  const savingsFillEl = document.getElementById("savingsFill");
+  const savingsDetailEl = document.getElementById("savingsDetail");
+  if (savingsPctEl) savingsPctEl.textContent = `${savingsPct}%`;
+  if (savingsFillEl) savingsFillEl.style.width = `${Math.min(100, parseFloat(savingsPct))}%`;
+  if (savingsDetailEl) savingsDetailEl.textContent = `${semanticKbps} kbps vs ${baselineKbps} kbps baseline`;
   const semanticPower = Number(b.power_proxy_semantic_mbits ?? 0).toFixed(3);
   const baselinePower = Number(b.power_proxy_baseline_mbits ?? 0).toFixed(3);
   const powerSavings = Number(b.power_savings_pct ?? 0).toFixed(1);

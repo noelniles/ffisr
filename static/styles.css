@@ -441,6 +441,57 @@ tfoot tr td {
   font-weight: 600;
 }
 
+/* ── Bandwidth savings bar ───────────────────────────── */
+#savingsBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 1rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  margin-bottom: 0.6rem;
+  flex-shrink: 0;
+}
+
+.savings-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.savings-pct {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #8aaa60;
+  min-width: 5ch;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.savings-track {
+  flex: 1;
+  height: 8px;
+  background: var(--line-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.savings-fill {
+  height: 100%;
+  width: 0%;
+  background: #8aaa60;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.savings-detail {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ── Scrollbar ───────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
