@@ -315,7 +315,25 @@ class FeatureFirstEngine:
         def _load() -> None:
             try:
                 ultralytics = importlib.import_module("ultralytics")
-                _name = Path(target_path).stem.lower()
+                # Disable telemetry and hub update checks — avoids rate-limit
+                # errors and network calls on air-gapped / FIPS systems.
+                try:
+                    ultralytics.utils.SETTINGS.update({
+                        "sync": False,
+                        "checks": False,
+                    })
+                except Exception:
+                    pass
+                if not Path(target_path).is_absolute():
+                    resolved = Path(target_path)
+                else:
+                    resolved = Path(target_path)
+                if not resolved.exists() and not resolved.suffix == "":
+                    raise FileNotFoundError(
+                        f"Model file not found: '{target_path}'. "
+                        f"Copy the .pt file to the working directory or provide an absolute path."
+                    )
+                _name = resolved.stem.lower()
                 if "rtdetr" in _name or "rt-detr" in _name:
                     model = ultralytics.RTDETR(target_path)
                 else:

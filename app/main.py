@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+import os
 import threading
 from typing import Any
+
+# Disable ultralytics telemetry and hub update checks before any ultralytics
+# import.  Without this, ultralytics contacts update servers on startup and
+# can hit rate limits or fail on air-gapped / FIPS-restricted networks.
+os.environ.setdefault("ULTRALYTICS_AUTOINSTALL", "0")
+os.environ.setdefault("YOLO_VERBOSE", "False")
 
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse, Response
