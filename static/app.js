@@ -305,7 +305,10 @@ async function pollState() {
     }
     const state = await response.json();
 
-    tracks = state.tracks || [];
+    // Deduplicate by track_id - keep last entry per ID in case of server duplicates
+    const trackMap = new Map();
+    for (const t of (state.tracks || [])) trackMap.set(t.track_id, t);
+    tracks = Array.from(trackMap.values());
     const rf = state.rf_link || {};
     const videoSource = state.video_source || {};
     const tracking = state.tracking || {};

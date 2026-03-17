@@ -739,7 +739,6 @@ class FeatureFirstEngine:
             canvas = video_canvas
 
         if self._tracking_active():
-            self._draw_track_overlay(canvas, sim_ts)
             return canvas
 
         for obj in self.objects:
@@ -1372,8 +1371,17 @@ class FeatureFirstEngine:
 
     def get_state(self) -> dict[str, Any]:
         with self.lock:
+            now_ts = time.monotonic() - self.start_monotonic
+            stale_cutoff = max(1.8, self._semantic_update_interval() * 3.0)
             tracks = sorted(
-                (item for item in self.track_view.values() if item.get("visible", True)),
+                (
+                    item for item in self.track_view.values()
+                    if item.get("visible") is True
+                    or (
+                        item.get("visible") is None
+                        and (now_ts - float(item.get("timestamp", 0))) < stale_cutoff
+                    )
+                ),
                 key=lambda item: item["track_id"],
             )
             events = list(self.events)[:20]
