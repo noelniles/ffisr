@@ -591,7 +591,11 @@ class FeatureFirstEngine:
 
         frame = self._render_frame(sim_ts)
 
-        baseline_bytes = self._encode_jpeg(frame, quality=72)
+        baseline_frame = frame
+        if self._tracking_active():
+            baseline_frame = frame.copy()
+            self._draw_track_overlay(baseline_frame, sim_ts)
+        baseline_bytes = self._encode_jpeg(baseline_frame, quality=72)
         if self.link.send("baseline", len(baseline_bytes)):
             self.latest_baseline_frame = baseline_bytes
             self.latest_baseline_frame_id += 1
