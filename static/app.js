@@ -36,7 +36,6 @@ const useSyntheticSourceBtn = document.getElementById("useSyntheticSource");
 const applyTrackingConfigBtn = document.getElementById("applyTrackingConfig");
 const requestKeyframe = document.getElementById("requestKeyframe");
 const trackSelect = document.getElementById("trackSelect");
-const refreshSummary = document.getElementById("refreshSummary");
 
 let selectedTrackId = null;
 let batchPollTimer = null;
@@ -438,25 +437,6 @@ async function sendKeyframeRequest() {
   });
 }
 
-async function loadSummary() {
-  refreshSummary.disabled = true;
-  refreshSummary.textContent = "Refreshing…";
-  try {
-    const res = await fetch("/api/summary", { cache: "no-store" });
-    if (!res.ok) {
-      throw new Error(`summary request failed: ${res.status}`);
-    }
-    const data = await res.json();
-    const stamp = new Date().toLocaleTimeString();
-    summaryOutput.textContent = `[updated ${stamp}]\n${data.summary_lines.join("\n")}`;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    summaryOutput.textContent = `Summary refresh failed: ${message}`;
-  } finally {
-    refreshSummary.disabled = false;
-    refreshSummary.textContent = "Summary slide text";
-  }
-}
 
 for (const btn of document.querySelectorAll("button[data-preset]")) {
   btn.onclick = async () => {
@@ -614,7 +594,6 @@ applyVideoSourceBtn.onclick = applyVideoSource;
 useSyntheticSourceBtn.onclick = useSyntheticSource;
 applyTrackingConfigBtn.onclick = applyTrackingConfig;
 requestKeyframe.onclick = sendKeyframeRequest;
-refreshSummary.onclick = loadSummary;
 if (runBatchBtn) runBatchBtn.onclick = startBatch;
 
 function renderLoop() {
@@ -624,7 +603,5 @@ function renderLoop() {
 
 drawPlaceholder();
 setInterval(pollState, 500);
-setInterval(loadSummary, 4000);
 pollState();
-loadSummary();
 requestAnimationFrame(renderLoop);
